@@ -1,17 +1,46 @@
 package main
 
 import (
-	"net/http"
+	"dating-app/configs"
+	"dating-app/routes"
+	"log"
+	"os"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 func main() {
+	configs.LoadEnv()
+
+	db := configs.InitDB()
+
+	configs.RunMigrations(db)
+
 	e := echo.New()
 
-	e.GET("/", func(c echo.Context) error {
-		return c.String(http.StatusOK, "Hello Echo!")
-	})
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{
+			echo.GET, echo.POST, echo.PUT, echo.DELETE, echo.PATCH,
+		},
+	}))
 
-	e.Logger.Fatal(e.Start(":8080"))
+	routes.Routes(e, db)
+
+	for _, r := range e.Routes() {
+		log.Printf("ROUTE %s %s", r.Method, r.Path)
+	}
+
+	defer configs.CloseConnections()
+
+	// Run server
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	log.Println("🚀 Server running on port:", port)
+
+	log.Fatal(e.Start(":" + port))
 }
