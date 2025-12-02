@@ -1,7 +1,7 @@
 package configs
 
 import (
-	"dating-app/internal/models"
+	"civi-id-app/internal/models"
 	"fmt"
 
 	"gorm.io/gorm"
@@ -12,6 +12,7 @@ func RunMigrations(db *gorm.DB) {
 
 	err := db.AutoMigrate(
 		&models.User{},
+		&models.Role{},
 	)
 
 	if err != nil {

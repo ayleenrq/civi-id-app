@@ -1,8 +1,8 @@
 package main
 
 import (
-	"dating-app/configs"
-	"dating-app/routes"
+	"civi-id-app/configs"
+	"civi-id-app/routes"
 	"log"
 	"os"
 
