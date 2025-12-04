@@ -42,3 +42,7 @@ func (r *UserRepositoryImpl) FindById(ctx context.Context, userID int) (*models.
 	}
 	return &user, nil
 }
+
+func (r *UserRepositoryImpl) Update(ctx context.Context, user *models.User) error {
+	return r.DB.WithContext(ctx).Save(user).Error
+}
