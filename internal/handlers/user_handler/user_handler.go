@@ -126,6 +126,25 @@ func (h *UserHandler) UpdateProfileUser(c echo.Context) error {
 	return response.Success(c, http.StatusOK, "Profile updated successfully", nil)
 }
 
+func (a *UserHandler) GenerateQR(c echo.Context) error {
+	userToken := c.Get("user").(*jwt.Token)
+	claims := userToken.Claims.(jwt.MapClaims)
+	userID, _ := strconv.Atoi(claims["user_id"].(string))
+
+	qrImage, err := a.userService.GenerateQR(c.Request().Context(), userID)
+	if err != nil {
+		if customErr, ok := errorresponse.AsCustomErr(err); ok {
+			return response.Error(c, customErr.Status, customErr.Msg, customErr.Err.Error())
+		}
+		return response.Error(c, 500, "Failed to generate QR", err.Error())
+	}
+
+	return response.Success(c, 200, "QR Generated", map[string]string{
+		"qr_url": qrImage,
+	})
+}
+
+
 func (a *UserHandler) LogoutUser(c echo.Context) error {
 	userToken := c.Get("user")
 	if userToken == nil {

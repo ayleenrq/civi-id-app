@@ -2,6 +2,7 @@ package main
 
 import (
 	"civi-id-app/configs"
+	datasources "civi-id-app/internal/dataSources"
 	"civi-id-app/routes"
 	"log"
 	"os"
@@ -27,7 +28,12 @@ func main() {
 		log.Printf("ROUTE %s %s", r.Method, r.Path)
 	}
 
-	routes.Routes(e, db)
+	cld, err := datasources.NewCloudinaryClient()
+	if err != nil {
+		log.Fatalf("Failed to init cloudinary client: %v", err)
+	}
+
+	routes.Routes(e, db, cld)
 
 	port := os.Getenv("PORT")
 	if port == "" {

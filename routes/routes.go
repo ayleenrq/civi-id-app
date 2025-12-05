@@ -5,14 +5,15 @@ import (
 	"civi-id-app/routes/role_route"
 	"civi-id-app/routes/user_route"
 
+	"github.com/cloudinary/cloudinary-go/v2"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
 
-func Routes(e *echo.Echo, db *gorm.DB) {
+func Routes(e *echo.Echo, db *gorm.DB, cld *cloudinary.Cloudinary) {
 	v1 := e.Group("/api/v1")
 
 	role_route.RoleRoutes(v1.Group("/role"), db)
 	admin_route.AdminRoutes(v1.Group("/admin"), db)
-	user_route.UserRoutes(v1.Group("/user"), db)
+	user_route.UserRoutes(v1.Group("/user"), db, cld)
 }

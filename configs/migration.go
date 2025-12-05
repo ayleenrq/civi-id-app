@@ -13,6 +13,7 @@ func RunMigrations(db *gorm.DB) {
 	err := db.AutoMigrate(
 		&models.User{},
 		&models.Role{},
+		&models.QRSession{},
 	)
 
 	if err != nil {

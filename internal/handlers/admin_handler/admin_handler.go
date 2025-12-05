@@ -2,8 +2,10 @@ package adminhandler
 
 import (
 	adminrequest "civi-id-app/internal/dto/request/admin_request"
+	qrrequest "civi-id-app/internal/dto/request/qr_request"
 	adminresponse "civi-id-app/internal/dto/response/admin_response"
 	adminservice "civi-id-app/internal/services/admin_service"
+	qrservice "civi-id-app/internal/services/qr_service"
 	errorresponse "civi-id-app/pkg/constant/error_response"
 	"civi-id-app/pkg/constant/response"
 	"net/http"
@@ -15,10 +17,11 @@ import (
 
 type AdminHandler struct {
 	adminService adminservice.IAdminService
+	qrService    qrservice.IQRService
 }
 
-func NewAdminHandler(adminService adminservice.IAdminService) *AdminHandler {
-	return &AdminHandler{adminService: adminService}
+func NewAdminHandler(adminService adminservice.IAdminService, qrService qrservice.IQRService) *AdminHandler {
+	return &AdminHandler{adminService: adminService, qrService: qrService}
 }
 
 func (a *AdminHandler) RegisterAdmin(c echo.Context) error {
@@ -138,3 +141,26 @@ func (a *AdminHandler) LogoutAdmin(c echo.Context) error {
 
 	return response.Success(c, http.StatusOK, "Logout Successfully", nil)
 }
+
+func (h *AdminHandler) ScanQR(c echo.Context) error {
+	var req qrrequest.ScanQRRequest
+
+	if err := c.Bind(&req); err != nil {
+		return response.Error(c, http.StatusBadRequest, "Invalid request format", err.Error())
+	}
+
+	if req.QRToken == "" {
+		return response.Error(c, http.StatusBadRequest, "QR token is required", nil)
+	}
+	
+	data, err := h.qrService.Scan(c.Request().Context(), req)
+	if err != nil {
+		if customErr, ok := errorresponse.AsCustomErr(err); ok {
+			return response.Error(c, customErr.Status, customErr.Msg, nil)
+		}
+		return response.Error(c, http.StatusInternalServerError, "Failed to scan QR", err.Error())
+	}
+
+	return response.Success(c, http.StatusOK, "QR Valid", data)
+}
+

@@ -1,6 +1,7 @@
 package userservice
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -8,19 +9,25 @@ import (
 
 	userrequest "civi-id-app/internal/dto/request/user_request"
 	"civi-id-app/internal/models"
+	qrrepo "civi-id-app/internal/repositories/qr_repository"
 	userrepo "civi-id-app/internal/repositories/user_repository"
 	errorresponse "civi-id-app/pkg/constant/error_response"
 	"civi-id-app/pkg/utils"
 
+	"github.com/cloudinary/cloudinary-go/v2"
+	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type UserServiceImpl struct {
-	userRepo userrepo.IUserRepository
+	userRepo   userrepo.IUserRepository
+	qrRepo     qrrepo.IQRRepository
+	cloudinary *cloudinary.Cloudinary
 }
 
-func NewUserServiceImpl(userRepo userrepo.IUserRepository) IUserService {
-	return &UserServiceImpl{userRepo: userRepo}
+func NewUserServiceImpl(userRepo userrepo.IUserRepository, qrRepo qrrepo.IQRRepository, cld *cloudinary.Cloudinary) IUserService {
+	return &UserServiceImpl{userRepo: userRepo, qrRepo: qrRepo, cloudinary: cld}
 }
 
 func (s *UserServiceImpl) Register(ctx context.Context, req userrequest.RegisterUserRequest) error {
@@ -153,7 +160,51 @@ func (s *UserServiceImpl) UpdateProfile(ctx context.Context, userID int, req use
 	return nil
 }
 
+func (s *UserServiceImpl) GenerateQR(ctx context.Context, userID int) (string, error) {
+	user, err := s.userRepo.FindById(ctx, userID)
+	if err != nil {
+		return "", errorresponse.NewCustomError(errorresponse.ErrNotFound, "User not found", 404)
+	}
+
+	qrToken := uuid.NewString()
+
+	qrBytes, err := utils.GenerateQRCodeBytes(qrToken)
+	if err != nil {
+		return "", errorresponse.NewCustomError(errorresponse.ErrInternal, "failed to generate QR code", 500)
+	}
+
+	filename := fmt.Sprintf("qr_user_%d_%s", user.ID, qrToken)
+
+	uploadResp, err := s.cloudinary.Upload.Upload(
+		ctx,
+		bytes.NewReader(qrBytes),
+		uploader.UploadParams{
+			PublicID:     "civi-id/qr/" + filename,
+			Folder:       "civi-id/qr",
+			ResourceType: "image",
+			Overwrite:    boolPtr(true),
+		},
+	)
+	if err != nil {
+		return "", errorresponse.NewCustomError(errorresponse.ErrInternal, "failed to upload QR code", 500)
+	}
+
+	session := models.QRSession{
+		UserID:  user.ID,
+		QRToken: qrToken,
+	}
+	if err := s.qrRepo.Create(ctx, &session); err != nil {
+		return "", errorresponse.NewCustomError(errorresponse.ErrInternal, "failed to save QR session", 500)
+	}
+
+	return uploadResp.SecureURL, nil
+}
+
 func (s *UserServiceImpl) Logout(ctx context.Context, userID int) error {
 	fmt.Printf("User %d logged out\n", userID)
 	return nil
+}
+
+func boolPtr(b bool) *bool {
+	return &b
 }

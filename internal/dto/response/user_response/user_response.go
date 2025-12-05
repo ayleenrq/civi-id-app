@@ -18,7 +18,7 @@ type UserResponse struct {
 	PhoneNumber    string    `json:"phone_number"`
 	Status         string    `json:"status"`
 	GenderVerified bool      `json:"gender_verified"`
-	// Role           string    `json:"role"`
+	Role           string    `json:"role"`
 	PhotoURL       string    `json:"photo_url"`
 	CreatedAt      string    `json:"created_at"`
 	UpdatedAt      string    `json:"updated_at"`
@@ -35,10 +35,10 @@ func ToUserResponse(user models.User) UserResponse {
 		Agama:          *user.Agama,
 		Address:        *user.Address,
 		PhoneNumber:    *user.PhoneNumber,
-		Status:			*user.Status,
+		Status:         *user.Status,
 		GenderVerified: *user.GenderVerified,
-		// Role: 			user.Role.Name,
-		PhotoURL: 		*user.PhotoURL,
+		Role:           user.Role.Name,
+		PhotoURL:       *user.PhotoURL,
 		CreatedAt:      utils.FormatDate(user.CreatedAt),
 		UpdatedAt:      utils.FormatDate(user.UpdatedAt),
 	}

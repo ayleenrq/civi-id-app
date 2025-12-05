@@ -11,5 +11,6 @@ type IUserService interface {
 	Login(ctx context.Context, req userrequest.LoginUserRequest) (string, error)
 	GetProfile(ctx context.Context, userID int) (*models.User, error)
 	UpdateProfile(ctx context.Context, adminID int, req userrequest.UpdateUserRequest) error
+	GenerateQR(ctx context.Context, userID int) (string, error)
 	Logout(ctx context.Context, userID int) error
 }
