@@ -17,7 +17,7 @@ type UserResponse struct {
 	Address        string    `json:"address"`
 	PhoneNumber    string    `json:"phone_number"`
 	Status         string    `json:"status"`
-	GenderVerified bool      `json:"gender_verified"`
+	GenderVerified string    `json:"gender_verified"`
 	Role           string    `json:"role"`
 	PhotoURL       string    `json:"photo_url"`
 	CreatedAt      string    `json:"created_at"`

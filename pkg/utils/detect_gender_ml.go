@@ -49,7 +49,7 @@ func DetectGenderML(fileHeader *multipart.FileHeader) (string, error) {
 
 	fastapiURL := os.Getenv("FASTAPI_GENDER_URL")
 	if fastapiURL == "" {
-		fastapiURL = "http://127.0.0.1:8000/detect-gender"
+		fastapiURL = "http://127.0.0.1:5000/predict"
 	}
 
 	req, err := http.NewRequest("POST", fastapiURL, &body)

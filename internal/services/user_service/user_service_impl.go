@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	userrequest "civi-id-app/internal/dto/request/user_request"
@@ -41,7 +42,6 @@ func (s *UserServiceImpl) Register(ctx context.Context, req userrequest.Register
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to get user NIK", 500)
 	}
-
 	if existsNIK != nil {
 		return errorresponse.NewCustomError(errorresponse.ErrExists, "NIK already exists", 409)
 	}
@@ -69,19 +69,22 @@ func (s *UserServiceImpl) Register(ctx context.Context, req userrequest.Register
 		return errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to upload photo", 500)
 	}
 
-	// genderML, err := utils.DetectGenderML(req.PhotoFile)
-	// if err != nil {
-	// 	return errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to detect gender", 500)
-	// }
+	normalizedGender := utils.InputToML(req.JenisKelamin)
+	if normalizedGender == "" {
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Jenis kelamin tidak valid", 400)
+	}
 
-	// genderVerified := strings.EqualFold(req.JenisKelamin, genderML)
-	// if !genderVerified {
-	// 	return errorresponse.NewCustomError(errorresponse.ErrBadRequest,
-	// 		"Jenis kelamin anda tidak sesuai. Silakan coba lagi.", 400)
-	// }
+	genderML, err := utils.DetectGenderML(req.PhotoFile)
+	if err != nil {
+		return errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to detect gender", 500)
+	}
 
-	genderML := req.JenisKelamin
-	genderVerified := true
+	if !strings.EqualFold(normalizedGender, genderML) {
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest,
+			"Jenis kelamin tidak sesuai dengan hasil deteksi wajah", 400)
+	}
+
+	verifiedGender := utils.MLToIndo(genderML)
 
 	user := &models.User{
 		NIK:            &req.NIK,
@@ -97,9 +100,8 @@ func (s *UserServiceImpl) Register(ctx context.Context, req userrequest.Register
 		Status:         &req.Status,
 		PhotoURL:       &photoURL,
 		GenderML:       &genderML,
-		GenderVerified: &genderVerified,
+		GenderVerified: &verifiedGender,
 		RoleID:         role.ID,
-		Role:           *role,
 	}
 
 	if err := s.userRepo.Create(ctx, user); err != nil {
@@ -161,44 +163,49 @@ func (s *UserServiceImpl) UpdateProfile(ctx context.Context, userID int, req use
 }
 
 func (s *UserServiceImpl) GenerateQR(ctx context.Context, userID int) (string, error) {
-	user, err := s.userRepo.FindById(ctx, userID)
-	if err != nil {
-		return "", errorresponse.NewCustomError(errorresponse.ErrNotFound, "User not found", 404)
-	}
+    user, err := s.userRepo.FindById(ctx, userID)
+    if err != nil {
+        return "", errorresponse.NewCustomError(errorresponse.ErrNotFound, "User not found", 404)
+    }
 
-	qrToken := uuid.NewString()
+    // Generate token baru setiap user klik Generate QR
+    qrToken := uuid.NewString()
 
-	qrBytes, err := utils.GenerateQRCodeBytes(qrToken)
-	if err != nil {
-		return "", errorresponse.NewCustomError(errorresponse.ErrInternal, "failed to generate QR code", 500)
-	}
+    // Buat QR code (bytes)
+    qrBytes, err := utils.GenerateQRCodeBytes(qrToken)
+    if err != nil {
+        return "", errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to generate QR code", 500)
+    }
 
-	filename := fmt.Sprintf("qr_user_%d_%s", user.ID, qrToken)
+    // Upload ke Cloudinary
+    filename := fmt.Sprintf("qr_user_%d_%s", user.ID, qrToken)
 
-	uploadResp, err := s.cloudinary.Upload.Upload(
-		ctx,
-		bytes.NewReader(qrBytes),
-		uploader.UploadParams{
-			PublicID:     "civi-id/qr/" + filename,
-			Folder:       "civi-id/qr",
-			ResourceType: "image",
-			Overwrite:    boolPtr(true),
-		},
-	)
-	if err != nil {
-		return "", errorresponse.NewCustomError(errorresponse.ErrInternal, "failed to upload QR code", 500)
-	}
+    uploadResp, err := s.cloudinary.Upload.Upload(
+        ctx,
+        bytes.NewReader(qrBytes),
+        uploader.UploadParams{
+            PublicID:     "civi-id/qr/" + filename,
+            Folder:       "civi-id/qr",
+            ResourceType: "image",
+            Overwrite:    boolPtr(true),
+        },
+    )
+    if err != nil {
+        return "", errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to upload QR code", 500)
+    }
 
-	session := models.QRSession{
-		UserID:  user.ID,
-		QRToken: qrToken,
-	}
-	if err := s.qrRepo.Create(ctx, &session); err != nil {
-		return "", errorresponse.NewCustomError(errorresponse.ErrInternal, "failed to save QR session", 500)
-	}
+    // Simpan token baru ke database
+    session := models.QRSession{
+        UserID:  user.ID,
+        QRToken: qrToken,
+    }
+    if err := s.qrRepo.Create(ctx, &session); err != nil {
+        return "", errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to save QR session", 500)
+    }
 
-	return uploadResp.SecureURL, nil
+    return uploadResp.SecureURL, nil
 }
+
 
 func (s *UserServiceImpl) Logout(ctx context.Context, userID int) error {
 	fmt.Printf("User %d logged out\n", userID)
