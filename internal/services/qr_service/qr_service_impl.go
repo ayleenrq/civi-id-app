@@ -20,37 +20,30 @@ func NewQRServiceImpl(qrRepo qrrepo.IQRRepository, userRepo userrepo.IUserReposi
 }
 
 func (s *QRServiceImpl) Scan(ctx context.Context, req qrrequest.ScanQRRequest) (map[string]any, error) {
-	session, err := s.qrRepo.FindByToken(ctx, req.QRToken)
-	if err != nil {
-		return nil, errorresponse.NewCustomError(errorresponse.ErrNotFound, "QR Code not found", 404)
-	}
+    session, err := s.qrRepo.FindByToken(ctx, req.QRToken)
+    if err != nil {
+        return nil, errorresponse.NewCustomError(errorresponse.ErrNotFound, "QR Code not found", 404)
+    }
 
-	user, err := s.userRepo.FindById(ctx, session.UserID)
-	if err != nil {
-		return nil, errorresponse.NewCustomError(errorresponse.ErrNotFound, "User not found", 404)
-	}
-	
-	data := map[string]any{
-		"id":           user.ID,
-		"nik":          *user.NIK,
-		"name":         user.Name,
-		"email":        user.Email,
-		"tempat_lahir": *user.TempatLahir,
-		"birth_date":   user.BirthDate,
-		"agama":        *user.Agama,
-		"address":      *user.Address,
-		"phone_number": *user.PhoneNumber,
-		"status":       *user.Status,
-		"gender_verified": func() bool {
-			if user.GenderVerified == nil {
-				return false
-			}
-			return *user.GenderVerified
-		}(),
-		"photo_url":  *user.PhotoURL,
-		"created_at": user.CreatedAt,
-		"updated_at": user.UpdatedAt,
-	}
+    user, err := s.userRepo.FindById(ctx, session.UserID)
+    if err != nil {
+        return nil, errorresponse.NewCustomError(errorresponse.ErrNotFound, "User not found", 404)
+    }
+
+    data := map[string]any{
+        "id":             user.ID,
+        "nik":            *user.NIK,
+        "name":           user.Name,
+        "email":          user.Email,
+		"tempat_lahir":   *user.TempatLahir,
+		"birth_date":     user.BirthDate,
+		"agama":          *user.Agama,
+        "address":        *user.Address,
+        "phone_number":   *user.PhoneNumber,
+		"status":         *user.Status,
+        "jenis_kelamin":  *user.JenisKelamin,
+        "photo_url":      *user.PhotoURL,
+    }
 
 	return data, nil
 }
