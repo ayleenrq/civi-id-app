@@ -15,6 +15,7 @@ type User struct {
 	Address        *string    `gorm:"type:text" json:"address"`
 	PhoneNumber    *string    `gorm:"type:varchar(20)" json:"phone_number"`
 	Status         *string    `gorm:"type:varchar(50)" json:"status"`
+	ReasonRegister *string    `gorm:"type:text" json:"alasan_register"`
 	GenderML       *string    `gorm:"type:varchar(20)" json:"gender_ml"`
 	RoleID         int        `gorm:"type:int" json:"role_id"`
 	Role           Role       `gorm:"foreignKey:RoleID"`

@@ -1,12 +1,11 @@
-package response
+package scanqrresponse
 
 import (
 	"civi-id-app/internal/models"
-	"civi-id-app/pkg/utils"
 	"time"
 )
 
-type UserResponse struct {
+type ScanQRResponse struct {
 	ID             int       `json:"id"`
 	NIK            string    `json:"nik"`
 	Name           string    `json:"name"`
@@ -18,15 +17,12 @@ type UserResponse struct {
 	Address        string    `json:"address"`
 	PhoneNumber    string    `json:"phone_number"`
 	Status         string    `json:"status"`
-	ReasonRegister string    `json:"reason_register"`
-	Role           string    `json:"role"`
+	ReasonRegister string    `json:"alasan_register"`
 	PhotoURL       string    `json:"photo_url"`
-	CreatedAt      string    `json:"created_at"`
-	UpdatedAt      string    `json:"updated_at"`
 }
 
-func ToUserResponse(user models.User) UserResponse {
-	return UserResponse{
+func ToScanQRResponse(user models.User) ScanQRResponse {
+	return ScanQRResponse{
 		ID:             user.ID,
 		NIK:            *user.NIK,
 		Name:           user.Name,
@@ -39,9 +35,6 @@ func ToUserResponse(user models.User) UserResponse {
 		PhoneNumber:    *user.PhoneNumber,
 		Status:         *user.Status,
 		ReasonRegister: *user.ReasonRegister,
-		Role:           user.Role.Name,
 		PhotoURL:       *user.PhotoURL,
-		CreatedAt:      utils.FormatDate(user.CreatedAt),
-		UpdatedAt:      utils.FormatDate(user.UpdatedAt),
 	}
 }

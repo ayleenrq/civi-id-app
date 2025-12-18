@@ -60,6 +60,9 @@ func (s *UserServiceImpl) Register(ctx context.Context, req userrequest.Register
 	if strings.TrimSpace(req.Status) == "" {
 		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Status is required", 400)
 	}
+	if strings.TrimSpace(req.ReasonRegister) == "" {
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Alasan register wajib diisi", 400)
+	}
 
 	if !utils.IsValidEmail(req.Email) {
 		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Email format is invalid", 400)
@@ -127,6 +130,7 @@ func (s *UserServiceImpl) Register(ctx context.Context, req userrequest.Register
 		Address:        &req.Address,
 		PhoneNumber:    &req.PhoneNumber,
 		Status:         &req.Status,
+		ReasonRegister: &req.ReasonRegister,
 		PhotoURL:       &photoURL,
 		GenderML:       &genderML,
 		RoleID:         role.ID,
@@ -140,6 +144,14 @@ func (s *UserServiceImpl) Register(ctx context.Context, req userrequest.Register
 }
 
 func (s *UserServiceImpl) Login(ctx context.Context, req userrequest.LoginUserRequest) (string, error) {
+	if strings.TrimSpace(req.NIK) == "" {
+		return "", errorresponse.NewCustomError(errorresponse.ErrBadRequest, "NIK is required", 400)
+	}
+
+	if !utils.IsValidNIK(req.NIK) {
+		return "", errorresponse.NewCustomError(errorresponse.ErrBadRequest, "NIK must be exactly 16 digits", 400)
+	}
+
 	user, err := s.userRepo.FindByNIK(ctx, req.NIK)
 	if err != nil {
 		return "", errorresponse.NewCustomError(errorresponse.ErrNotFound, "Invalid NIK", 400)
@@ -191,49 +203,48 @@ func (s *UserServiceImpl) UpdateProfile(ctx context.Context, userID int, req use
 }
 
 func (s *UserServiceImpl) GenerateQR(ctx context.Context, userID int) (string, error) {
-    user, err := s.userRepo.FindById(ctx, userID)
-    if err != nil {
-        return "", errorresponse.NewCustomError(errorresponse.ErrNotFound, "User not found", 404)
-    }
+	user, err := s.userRepo.FindById(ctx, userID)
+	if err != nil {
+		return "", errorresponse.NewCustomError(errorresponse.ErrNotFound, "User not found", 404)
+	}
 
-    // Generate token baru setiap user klik Generate QR
-    qrToken := uuid.NewString()
+	// Generate token baru setiap user klik Generate QR
+	qrToken := uuid.NewString()
 
-    // Buat QR code (bytes)
-    qrBytes, err := utils.GenerateQRCodeBytes(qrToken)
-    if err != nil {
-        return "", errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to generate QR code", 500)
-    }
+	// Buat QR code (bytes)
+	qrBytes, err := utils.GenerateQRCodeBytes(qrToken)
+	if err != nil {
+		return "", errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to generate QR code", 500)
+	}
 
-    // Upload ke Cloudinary
-    filename := fmt.Sprintf("qr_user_%d_%s", user.ID, qrToken)
+	// Upload ke Cloudinary
+	filename := fmt.Sprintf("qr_user_%d_%s", user.ID, qrToken)
 
-    uploadResp, err := s.cloudinary.Upload.Upload(
-        ctx,
-        bytes.NewReader(qrBytes),
-        uploader.UploadParams{
-            PublicID:     "civi-id/qr/" + filename,
-            Folder:       "civi-id/qr",
-            ResourceType: "image",
-            Overwrite:    boolPtr(true),
-        },
-    )
-    if err != nil {
-        return "", errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to upload QR code", 500)
-    }
+	uploadResp, err := s.cloudinary.Upload.Upload(
+		ctx,
+		bytes.NewReader(qrBytes),
+		uploader.UploadParams{
+			PublicID:     "civi-id/qr/" + filename,
+			Folder:       "civi-id/qr",
+			ResourceType: "image",
+			Overwrite:    boolPtr(true),
+		},
+	)
+	if err != nil {
+		return "", errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to upload QR code", 500)
+	}
 
-    // Simpan token baru ke database
-    session := models.QRSession{
-        UserID:  user.ID,
-        QRToken: qrToken,
-    }
-    if err := s.qrRepo.Create(ctx, &session); err != nil {
-        return "", errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to save QR session", 500)
-    }
+	// Simpan token baru ke database
+	session := models.QRSession{
+		UserID:  user.ID,
+		QRToken: qrToken,
+	}
+	if err := s.qrRepo.Create(ctx, &session); err != nil {
+		return "", errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to save QR session", 500)
+	}
 
-    return uploadResp.SecureURL, nil
+	return uploadResp.SecureURL, nil
 }
-
 
 func (s *UserServiceImpl) Logout(ctx context.Context, userID int) error {
 	fmt.Printf("User %d logged out\n", userID)

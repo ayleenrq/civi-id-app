@@ -34,6 +34,7 @@ func (h *UserHandler) RegisterUser(c echo.Context) error {
 	req.Address = c.FormValue("address")
 	req.PhoneNumber = c.FormValue("phone_number")
 	req.Status = c.FormValue("status")
+	req.ReasonRegister = c.FormValue("alasan_register")
 
 	photoFile, err := c.FormFile("photo_file")
 	if err != nil {
