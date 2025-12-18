@@ -44,9 +44,9 @@ func (s *UserServiceImpl) Register(ctx context.Context, req userrequest.Register
 	if strings.TrimSpace(req.Password) == "" {
 		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Password is required", 400)
 	}
-	if strings.TrimSpace(req.JenisKelamin) == "" {
-		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Jenis kelamin is required", 400)
-	}
+	// if strings.TrimSpace(req.JenisKelamin) == "" {
+	// 	return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Jenis kelamin is required", 400)
+	// }
 	if strings.TrimSpace(req.TempatLahir) == "" {
 		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Tempat lahir is required", 400)
 	}
