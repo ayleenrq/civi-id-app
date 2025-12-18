@@ -44,9 +44,7 @@ func (s *UserServiceImpl) Register(ctx context.Context, req userrequest.Register
 	if strings.TrimSpace(req.Password) == "" {
 		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Password is required", 400)
 	}
-	// if strings.TrimSpace(req.JenisKelamin) == "" {
-	// 	return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Jenis kelamin is required", 400)
-	// }
+
 	if strings.TrimSpace(req.TempatLahir) == "" {
 		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Tempat lahir is required", 400)
 	}
@@ -110,29 +108,19 @@ func (s *UserServiceImpl) Register(ctx context.Context, req userrequest.Register
 		return errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to upload photo", 500)
 	}
 
-	normalizedGender := utils.InputToML(req.JenisKelamin)
-	if normalizedGender == "" {
-		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Jenis kelamin tidak valid", 400)
-	}
-
 	genderML, err := utils.DetectGenderML(req.PhotoFile)
 	if err != nil {
 		return errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to detect gender", 500)
 	}
 
-	if !strings.EqualFold(normalizedGender, genderML) {
-		return errorresponse.NewCustomError(errorresponse.ErrBadRequest,
-			"Jenis kelamin tidak sesuai dengan hasil deteksi wajah", 400)
-	}
-
-	verifiedGender := utils.MLToIndo(genderML)
+	jenisKelamin := utils.MLToIndo(genderML)
 
 	user := &models.User{
 		NIK:            &req.NIK,
 		Name:           req.Name,
 		Email:          req.Email,
 		Password:       hashedPass,
-		JenisKelamin:   &req.JenisKelamin,
+		JenisKelamin:   &jenisKelamin,
 		TempatLahir:    &req.TempatLahir,
 		BirthDate:      &birth,
 		Agama:          &req.Agama,
@@ -141,7 +129,6 @@ func (s *UserServiceImpl) Register(ctx context.Context, req userrequest.Register
 		Status:         &req.Status,
 		PhotoURL:       &photoURL,
 		GenderML:       &genderML,
-		GenderVerified: &verifiedGender,
 		RoleID:         role.ID,
 	}
 

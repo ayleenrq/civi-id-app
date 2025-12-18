@@ -28,7 +28,6 @@ func (h *UserHandler) RegisterUser(c echo.Context) error {
 	req.Name = c.FormValue("name")
 	req.Email = c.FormValue("email")
 	req.Password = c.FormValue("password")
-	req.JenisKelamin = c.FormValue("jenis_kelamin")
 	req.TempatLahir = c.FormValue("tempat_lahir")
 	req.BirthDate = c.FormValue("birth_date")
 	req.Agama = c.FormValue("agama")
