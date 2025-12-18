@@ -32,10 +32,51 @@ func NewUserServiceImpl(userRepo userrepo.IUserRepository, qrRepo qrrepo.IQRRepo
 }
 
 func (s *UserServiceImpl) Register(ctx context.Context, req userrequest.RegisterUserRequest) error {
-	if req.NIK == "" || req.Name == "" || req.Email == "" || req.Password == "" ||
-		req.JenisKelamin == "" || req.TempatLahir == "" || req.Agama == "" ||
-		req.Address == "" || req.PhoneNumber == "" || req.Status == "" {
-		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "All fields are required", 400)
+	if strings.TrimSpace(req.NIK) == "" {
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "NIK is required", 400)
+	}
+	if strings.TrimSpace(req.Name) == "" {
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Name is required", 400)
+	}
+	if strings.TrimSpace(req.Email) == "" {
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Email is required", 400)
+	}
+	if strings.TrimSpace(req.Password) == "" {
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Password is required", 400)
+	}
+	if strings.TrimSpace(req.JenisKelamin) == "" {
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Jenis kelamin is required", 400)
+	}
+	if strings.TrimSpace(req.TempatLahir) == "" {
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Tempat lahir is required", 400)
+	}
+	if strings.TrimSpace(req.Agama) == "" {
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Agama is required", 400)
+	}
+	if strings.TrimSpace(req.Address) == "" {
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Address is required", 400)
+	}
+	if strings.TrimSpace(req.PhoneNumber) == "" {
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Phone number is required", 400)
+	}
+	if strings.TrimSpace(req.Status) == "" {
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Status is required", 400)
+	}
+
+	if !utils.IsValidEmail(req.Email) {
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Email format is invalid", 400)
+	}
+
+	if !utils.IsValidNIK(req.NIK) {
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "NIK must be exactly 16 digits", 400)
+	}
+
+	if !utils.IsNumeric(req.PhoneNumber) {
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Phone number must be numeric", 400)
+	}
+
+	if req.PhotoFile == nil {
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Photo file is required", 400)
 	}
 
 	existsNIK, err := s.userRepo.FindByNIK(ctx, req.NIK)

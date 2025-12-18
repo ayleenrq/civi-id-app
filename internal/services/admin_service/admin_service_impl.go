@@ -35,11 +35,15 @@ func (a *AdminServiceImpl) Register(ctx context.Context, req adminrequest.Regist
 		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Password is required", 400)
 	}
 
-	existsEmail, err := a.adminRepo.FindByEmail(ctx, req.Email)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to get user email", 500)
+	if !utils.IsValidEmail(req.Email) {
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Email format is invalid", 400)
 	}
 
+	existsEmail, err := a.adminRepo.FindByEmail(ctx, req.Email)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to check email", 500)
+	}
+	
 	if existsEmail != nil {
 		return errorresponse.NewCustomError(errorresponse.ErrExists, "Email already exists", 409)
 	}
