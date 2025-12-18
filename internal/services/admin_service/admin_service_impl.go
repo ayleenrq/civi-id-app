@@ -24,33 +24,33 @@ func NewAdminServiceImpl(adminRepo adminrepo.IAdminRepository) IAdminService {
 
 func (a *AdminServiceImpl) Register(ctx context.Context, req adminrequest.RegisterAdminRequest) error {
 	if strings.TrimSpace(req.Name) == "" {
-		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Name is required", 400)
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Nama wajib diisi", 400)
 	}
 
 	if strings.TrimSpace(req.Email) == "" {
-		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Email is required", 400)
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Email wajib diisi", 400)
 	}
 
 	if strings.TrimSpace(req.Password) == "" {
-		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Password is required", 400)
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Password wajib diisi", 400)
 	}
 
 	if !utils.IsValidEmail(req.Email) {
-		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Email format is invalid", 400)
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Format email tidak valid", 400)
 	}
 
 	existsEmail, err := a.adminRepo.FindByEmail(ctx, req.Email)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to check email", 500)
+		return errorresponse.NewCustomError(errorresponse.ErrInternal, "Gagal mendapatkan email", 500)
 	}
 	
 	if existsEmail != nil {
-		return errorresponse.NewCustomError(errorresponse.ErrExists, "Email already exists", 409)
+		return errorresponse.NewCustomError(errorresponse.ErrExists, "Email sudah digunakan", 409)
 	}
 
 	hashed, err := utils.HashPassword(req.Password)
 	if err != nil {
-		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Failed to hash password", 400)
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Gagal meng-hash password", 400)
 	}
 
 	role, err := a.adminRepo.FindRoleAdmin(ctx)
@@ -70,26 +70,36 @@ func (a *AdminServiceImpl) Register(ctx context.Context, req adminrequest.Regist
 	}
 
 	if err := a.adminRepo.Create(ctx, admin); err != nil {
-		return errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to create admin", 500)
+		return errorresponse.NewCustomError(errorresponse.ErrInternal, "Gagal menyimpan data admin", 500)
 	}
 
 	return nil
 }
 
 func (a *AdminServiceImpl) Login(ctx context.Context, req adminrequest.LoginAdminRequest) (string, error) {
+	if strings.TrimSpace(req.Email) == "" {
+		return "", errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Email wajib diisi", 400)
+	}
+	if strings.TrimSpace(req.Password) == "" {
+		return "", errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Kata sandi wajib diisi", 400)
+	}
+	if !utils.IsValidEmail(req.Email) {
+		return "", errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Format email tidak valid", 400)
+	}
+
 	admin, err := a.adminRepo.FindByEmail(ctx, req.Email)
 	if err != nil {
-		return "", errorresponse.NewCustomError(errorresponse.ErrNotFound, "Invalid credentials", 400)
+		return "", errorresponse.NewCustomError(errorresponse.ErrNotFound, "Email atau kata sandi tidak valid", 400)
 	}
 
 	isPasswordValid := utils.CheckPasswordHash(req.Password, admin.Password)
 	if !isPasswordValid {
-		return "", errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Password incorrect", 400)
+		return "", errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Password salah", 400)
 	}
 
 	token, err := utils.GenerateToken(admin.ID, admin.RoleID)
 	if err != nil {
-		return "", errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to generate token", 500)
+		return "", errorresponse.NewCustomError(errorresponse.ErrInternal, "Gagal membuat token autentikasi", 500)
 	}
 
 	return token, nil

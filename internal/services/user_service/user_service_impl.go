@@ -33,64 +33,63 @@ func NewUserServiceImpl(userRepo userrepo.IUserRepository, qrRepo qrrepo.IQRRepo
 
 func (s *UserServiceImpl) Register(ctx context.Context, req userrequest.RegisterUserRequest) error {
 	if strings.TrimSpace(req.NIK) == "" {
-		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "NIK is required", 400)
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "NIK wajib diisi", 400)
 	}
 	if strings.TrimSpace(req.Name) == "" {
-		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Name is required", 400)
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Nama wajib diisi", 400)
 	}
 	if strings.TrimSpace(req.Email) == "" {
-		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Email is required", 400)
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Email wajib diisi", 400)
 	}
 	if strings.TrimSpace(req.Password) == "" {
-		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Password is required", 400)
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Password wajib diisi", 400)
 	}
-
 	if strings.TrimSpace(req.TempatLahir) == "" {
-		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Tempat lahir is required", 400)
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Tempat Lahir wajib diisi", 400)
 	}
 	if strings.TrimSpace(req.Agama) == "" {
-		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Agama is required", 400)
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Agama wajib diisi", 400)
 	}
 	if strings.TrimSpace(req.Address) == "" {
-		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Address is required", 400)
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Alamat wajib diisi", 400)
 	}
 	if strings.TrimSpace(req.PhoneNumber) == "" {
-		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Phone number is required", 400)
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Nomor Handphone wajib diisi", 400)
 	}
 	if strings.TrimSpace(req.Status) == "" {
-		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Status is required", 400)
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Status Perkawinan wajib diisi", 400)
 	}
 	if strings.TrimSpace(req.ReasonRegister) == "" {
-		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Alasan register wajib diisi", 400)
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Alasan wajib diisi", 400)
 	}
 
 	if !utils.IsValidEmail(req.Email) {
-		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Email format is invalid", 400)
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Format email tidak valid", 400)
 	}
 
 	if !utils.IsValidNIK(req.NIK) {
-		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "NIK must be exactly 16 digits", 400)
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "NIK harus terdiri dari 16 digit angka", 400)
 	}
 
 	if !utils.IsNumeric(req.PhoneNumber) {
-		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Phone number must be numeric", 400)
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Nomor Handphone harus berupa angka", 400)
 	}
 
 	if req.PhotoFile == nil {
-		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Photo file is required", 400)
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Foto wajib diunggah", 400)
 	}
 
 	existsNIK, err := s.userRepo.FindByNIK(ctx, req.NIK)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to get user NIK", 500)
+		return errorresponse.NewCustomError(errorresponse.ErrInternal, "Gagal mendapatkan NIK", 500)
 	}
 	if existsNIK != nil {
-		return errorresponse.NewCustomError(errorresponse.ErrExists, "NIK already exists", 409)
+		return errorresponse.NewCustomError(errorresponse.ErrExists, "NIK sudah digunakan", 409)
 	}
 
 	hashedPass, err := utils.HashPassword(req.Password)
 	if err != nil {
-		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Failed to hash password", 400)
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Gagal meng-hash password", 400)
 	}
 
 	role, err := s.userRepo.FindRoleUser(ctx)
@@ -103,17 +102,17 @@ func (s *UserServiceImpl) Register(ctx context.Context, req userrequest.Register
 
 	birth, err := time.Parse("2006-01-02", req.BirthDate)
 	if err != nil {
-		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "BirthDate must be YYYY-MM-DD", 400)
+		return errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Format tanggal lahir harus YYYY-MM-DD", 400)
 	}
 
 	photoURL, err := utils.UploadToCloudinary(req.PhotoFile, "civi-id/users")
 	if err != nil {
-		return errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to upload photo", 500)
+		return errorresponse.NewCustomError(errorresponse.ErrInternal, "Gagal mengunggah foto", 500)
 	}
 
 	genderML, err := utils.DetectGenderML(req.PhotoFile)
 	if err != nil {
-		return errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to detect gender", 500)
+		return errorresponse.NewCustomError(errorresponse.ErrInternal, "Gagal mendeteksi jenis kelamin", 500)
 	}
 
 	jenisKelamin := utils.MLToIndo(genderML)
@@ -137,7 +136,7 @@ func (s *UserServiceImpl) Register(ctx context.Context, req userrequest.Register
 	}
 
 	if err := s.userRepo.Create(ctx, user); err != nil {
-		return errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to create user", 500)
+		return errorresponse.NewCustomError(errorresponse.ErrInternal, "Gagal menyimpan data pengguna", 500)
 	}
 
 	return nil
@@ -145,25 +144,25 @@ func (s *UserServiceImpl) Register(ctx context.Context, req userrequest.Register
 
 func (s *UserServiceImpl) Login(ctx context.Context, req userrequest.LoginUserRequest) (string, error) {
 	if strings.TrimSpace(req.NIK) == "" {
-		return "", errorresponse.NewCustomError(errorresponse.ErrBadRequest, "NIK is required", 400)
+		return "", errorresponse.NewCustomError(errorresponse.ErrBadRequest, "NIK wajib diisi", 400)
 	}
 
 	if !utils.IsValidNIK(req.NIK) {
-		return "", errorresponse.NewCustomError(errorresponse.ErrBadRequest, "NIK must be exactly 16 digits", 400)
+		return "", errorresponse.NewCustomError(errorresponse.ErrBadRequest, "NIK harus terdiri dari 16 digit angka", 400)
 	}
 
 	user, err := s.userRepo.FindByNIK(ctx, req.NIK)
 	if err != nil {
-		return "", errorresponse.NewCustomError(errorresponse.ErrNotFound, "Invalid NIK", 400)
+		return "", errorresponse.NewCustomError(errorresponse.ErrNotFound, "NIK tidak valid", 400)
 	}
 
 	if !utils.CheckPasswordHash(req.Password, user.Password) {
-		return "", errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Password incorrect", 400)
+		return "", errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Password salah", 400)
 	}
 
 	token, err := utils.GenerateToken(user.ID, user.RoleID)
 	if err != nil {
-		return "", errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to generate token", 500)
+		return "", errorresponse.NewCustomError(errorresponse.ErrInternal, "Gagal membuat token autentikasi", 500)
 	}
 
 	return token, nil
@@ -205,19 +204,16 @@ func (s *UserServiceImpl) UpdateProfile(ctx context.Context, userID int, req use
 func (s *UserServiceImpl) GenerateQR(ctx context.Context, userID int) (string, error) {
 	user, err := s.userRepo.FindById(ctx, userID)
 	if err != nil {
-		return "", errorresponse.NewCustomError(errorresponse.ErrNotFound, "User not found", 404)
+		return "", errorresponse.NewCustomError(errorresponse.ErrNotFound, "Pengguna tidak ditemukan", 404)
 	}
 
-	// Generate token baru setiap user klik Generate QR
 	qrToken := uuid.NewString()
 
-	// Buat QR code (bytes)
 	qrBytes, err := utils.GenerateQRCodeBytes(qrToken)
 	if err != nil {
-		return "", errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to generate QR code", 500)
+		return "", errorresponse.NewCustomError(errorresponse.ErrInternal, "Gagal membuat kode QR", 500)
 	}
 
-	// Upload ke Cloudinary
 	filename := fmt.Sprintf("qr_user_%d_%s", user.ID, qrToken)
 
 	uploadResp, err := s.cloudinary.Upload.Upload(
@@ -231,16 +227,15 @@ func (s *UserServiceImpl) GenerateQR(ctx context.Context, userID int) (string, e
 		},
 	)
 	if err != nil {
-		return "", errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to upload QR code", 500)
+		return "", errorresponse.NewCustomError(errorresponse.ErrInternal, "Gagal mengunggah kode QR", 500)
 	}
 
-	// Simpan token baru ke database
 	session := models.QRSession{
 		UserID:  user.ID,
 		QRToken: qrToken,
 	}
 	if err := s.qrRepo.Create(ctx, &session); err != nil {
-		return "", errorresponse.NewCustomError(errorresponse.ErrInternal, "Failed to save QR session", 500)
+		return "", errorresponse.NewCustomError(errorresponse.ErrInternal, "Gagal menyimpan sesi QR", 500)
 	}
 
 	return uploadResp.SecureURL, nil
