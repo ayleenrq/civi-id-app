@@ -89,11 +89,10 @@ func (a *AdminServiceImpl) Login(ctx context.Context, req adminrequest.LoginAdmi
 
 	admin, err := a.adminRepo.FindByEmail(ctx, req.Email)
 	if err != nil {
-		return "", errorresponse.NewCustomError(errorresponse.ErrNotFound, "Email atau kata sandi tidak valid", 400)
+		return "", errorresponse.NewCustomError(errorresponse.ErrNotFound, "Email tidak valid", 400)
 	}
 
-	isPasswordValid := utils.CheckPasswordHash(req.Password, admin.Password)
-	if !isPasswordValid {
+	if !utils.CheckPasswordHash(req.Password, admin.Password) {
 		return "", errorresponse.NewCustomError(errorresponse.ErrBadRequest, "Password salah", 400)
 	}
 
